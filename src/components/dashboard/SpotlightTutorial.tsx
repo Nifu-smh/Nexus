@@ -80,7 +80,7 @@ const scrollToTarget = (element: Element) => {
   const headerHeight = 72; // Clearance for top fixed header
   const currentTop = rect.top;
 
-  // Center the target comfortably in view below header
+  // Frame the target comfortably in view below header
   const idealTop = headerHeight + Math.max(20, (window.innerHeight - headerHeight - rect.height) / 2);
   const targetScrollY = window.scrollY + (currentTop - idealTop);
 
@@ -215,18 +215,58 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
     onClose();
   };
 
+  // Determine smart non-overlapping vertical placement for tutorial card
+  const getCardPositionStyle = (): React.CSSProperties => {
+    if (!targetRect) {
+      return {
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 50,
+      };
+    }
+
+    const vh = window.innerHeight;
+    const targetCenterY = targetRect.top + targetRect.height / 2;
+
+    // If target is in lower half of screen, position card near top
+    if (targetCenterY > vh * 0.45) {
+      return {
+        position: 'fixed',
+        top: '84px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 50,
+      };
+    }
+
+    // If target is in upper half of screen, position card near bottom
+    return {
+      position: 'fixed',
+      bottom: '24px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 50,
+    };
+  };
+
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none select-none flex items-center justify-center p-4 sm:p-6">
-      {/* Stitch Translucent Backdrop with click-to-dismiss */}
+    <div className="fixed inset-0 z-50 pointer-events-none select-none">
+      {/* Click-away backdrop: Clean translucent tint without ANY blur */}
       <div
         onClick={handleSkip}
-        className="fixed inset-0 bg-surface-container-lowest/80 backdrop-blur-sm pointer-events-auto transition-opacity duration-300 z-40"
+        className="fixed inset-0 pointer-events-auto transition-opacity duration-300 z-40 bg-transparent"
       />
 
       {/* Target Area Spotlight Illumination Ring & Crystal Clear Cutout */}
-      {targetRect && (
+      {targetRect ? (
         <>
-          {/* Deep dark perimeter cutout with electric border and brightened interior */}
+          {/* 
+            The single box-shadow cutout:
+            - ZERO shadow inside the box: Target is 100% UNTOUCHED, crystal clear, sharp, NO blur!
+            - Outside the box: Soft 65% dark tint smoothly dims the rest of the page (no blur!).
+          */}
           <div
             style={{
               position: 'fixed',
@@ -238,15 +278,12 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
               pointerEvents: 'none',
               borderRadius: '24px',
               boxShadow: `
-                0 0 0 9999px rgba(6, 14, 32, 0.82),
+                0 0 0 9999px rgba(6, 14, 32, 0.65),
                 0 0 25px 4px rgba(128, 131, 255, 0.65),
-                0 0 60px 10px rgba(78, 222, 163, 0.25),
-                inset 0 0 15px rgba(192, 193, 255, 0.2)
+                0 0 50px 8px rgba(78, 222, 163, 0.25)
               `,
-              border: '2px solid rgba(192, 193, 255, 0.9)',
-              backdropFilter: 'brightness(1.4) contrast(1.12) saturate(1.2)',
-              WebkitBackdropFilter: 'brightness(1.4) contrast(1.12) saturate(1.2)',
-              background: 'radial-gradient(ellipse at center, rgba(192, 193, 255, 0.12) 0%, transparent 80%)',
+              border: '2px solid rgba(192, 193, 255, 0.95)',
+              background: 'transparent',
               transition: isScrolling ? 'none' : 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           />
@@ -268,10 +305,19 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
             className="animate-pulse pointer-events-none"
           />
         </>
+      ) : (
+        /* Fallback subtle dark tint when target is not yet located */
+        <div
+          onClick={handleSkip}
+          className="fixed inset-0 bg-[#060e20]/65 pointer-events-auto transition-opacity z-40"
+        />
       )}
 
-      {/* Floating Tutorial Step Card — Exact Stitch Specification (w-full max-w-lg, centered, never squeezed) */}
-      <div className="pointer-events-auto relative w-full max-w-lg rounded-3xl bg-surface-container-high/95 backdrop-blur-xl border border-primary/40 p-6 sm:p-8 shadow-2xl shadow-indigo-500/20 animate-entrance text-on-surface z-50 my-auto">
+      {/* Floating Tutorial Step Card — Exact Stitch Specification */}
+      <div
+        style={getCardPositionStyle()}
+        className="pointer-events-auto w-[92vw] max-w-lg rounded-3xl bg-surface-container-high/95 backdrop-blur-xl border border-primary/40 p-6 sm:p-8 shadow-2xl shadow-indigo-500/20 animate-entrance text-on-surface"
+      >
         {/* Floating Top Badge with Live Dot */}
         <div className="absolute -top-3 left-8 px-3 py-1 rounded-full bg-primary-container text-on-primary-container text-[11px] font-semibold tracking-wide flex items-center gap-1.5 shadow-md">
           <span className="w-2 h-2 rounded-full bg-surface-tint pulse-ring-dot" />
