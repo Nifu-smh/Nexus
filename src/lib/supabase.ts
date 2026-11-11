@@ -51,6 +51,8 @@ export function initSupabaseClient(): { client: SupabaseClient | null; isConfigu
       auth: {
         persistSession: true,
         autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
       },
     });
     return { client, isConfigured: true };

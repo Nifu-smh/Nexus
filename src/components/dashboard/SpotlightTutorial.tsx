@@ -1,48 +1,68 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+export interface TutorialFeature {
+  icon: string;
+  color?: 'primary' | 'secondary' | 'tertiary';
+  text: string;
+}
+
 export interface SpotlightStep {
   targetSelector: string;
-  title: string;
   badge: string;
+  icon: string;
+  title: string;
   description: string;
+  features: TutorialFeature[];
+  nextBtnLabel?: string;
   position?: 'bottom' | 'top' | 'left' | 'right';
 }
 
-const DEFAULT_STEPS: SpotlightStep[] = [
+/**
+ * Canonical 3-Step Workspace Selection Tutorial from Stitch design:
+ * Screen: NEXUS — Workspace Selection (Tutorial Tour)
+ */
+export const WORKSPACE_TUTORIAL_STEPS: SpotlightStep[] = [
   {
-    targetSelector: '[data-tour="header-nav"]',
-    badge: 'Step 1 of 5 • Workspace Navigation',
-    title: 'Welcome to NEXUS Cloud',
-    description: 'Switch between multi-tenant engineering workspaces, inspect active sprint velocity, or access technical specifications from the central directory.',
-    position: 'bottom',
-  },
-  {
-    targetSelector: '[data-tour="sidebar-nav"]',
-    badge: 'Step 2 of 5 • Compact Navigation Rail',
-    title: 'Icon Navigation Rail',
-    description: 'Quickly access Directory, Sprints, Velocity telemetry, Specifications, and real-time sync with our streamlined icon rail.',
-    position: 'right',
-  },
-  {
-    targetSelector: '[data-tour="action-hub"]',
-    badge: 'Step 3 of 5 • Quick Actions',
-    title: 'Provision or Join Workspaces',
-    description: 'Launch an isolated workspace in under 60 seconds with dedicated Git repositories and Agile Kanban, or enter an invite code to join your team.',
-    position: 'bottom',
+    targetSelector: '[data-tour="workspaces-section"]',
+    badge: 'Step 1 of 3 · Workspaces Tour',
+    icon: 'rocket_launch',
+    title: 'Your Engineering Workspaces',
+    description: 'Isolated, production-grade environments connected to your GitHub repositories, sprint Kanban boards, and Supabase auth pipelines. Launch straight into sprint cycles or review open PRs in seconds.',
+    features: [
+      { icon: 'bolt', color: 'primary', text: 'Real-time Git & CI/CD build telemetry' },
+      { icon: 'analytics', color: 'secondary', text: 'Live velocity tracking & sprint burndown metrics' },
+      { icon: 'groups', color: 'tertiary', text: 'Collaborative multi-agent developer sandboxes' },
+    ],
+    nextBtnLabel: 'Next: Sprint Telemetry',
+    position: 'top',
   },
   {
     targetSelector: '[data-tour="metrics-row"]',
-    badge: 'Step 4 of 5 • Real-Time Telemetry',
-    title: 'Sprint Telemetry & Metrics',
-    description: 'Track connected environments, sprint tasks currently in flight, and pending GitHub pull request reviews at a single glance with 99.98% SLA.',
+    badge: 'Step 2 of 3 · Workspaces Tour',
+    icon: 'analytics',
+    title: 'Live Sprint Telemetry & Metrics',
+    description: 'Track connected engineering environments, sprint tasks currently in flight, and pending GitHub pull request reviews at a single glance with 99.98% SLA reliability.',
+    features: [
+      { icon: 'monitoring', color: 'primary', text: 'Automated sprint velocity and throughput progress' },
+      { icon: 'checklist_rtl', color: 'secondary', text: 'Granular status breakdown (To Do, Active, Done)' },
+      { icon: 'alt_route', color: 'tertiary', text: 'Real-time GitHub & Supabase cloud synchronization' },
+    ],
+    nextBtnLabel: 'Next: Workspace Provisioning',
     position: 'bottom',
   },
   {
-    targetSelector: '[data-tour="workspaces-section"]',
-    badge: 'Step 5 of 5 • Sprint Execution',
-    title: 'Your Engineering Workspaces',
-    description: 'Each workspace provides an isolated sandbox with Kanban boards, customizable sprint cycles, and real-time git sync. Click "Launch Workspace" to begin!',
-    position: 'top',
+    targetSelector: '[data-tour="action-hub"]',
+    badge: 'Step 3 of 3 · Workspaces Tour',
+    icon: 'add_circle',
+    title: 'Launch or Join Team Workspaces',
+    description: 'Spin up a dedicated engineering workspace in under 60 seconds with pre-configured agile templates, or paste an enterprise invite token to join your team instantly.',
+    features: [
+      { icon: 'add_box', color: 'primary', text: 'Rapid setup with Agile Sprint Kanban templates' },
+      { icon: 'vpn_key', color: 'secondary', text: 'Instant access via 6-digit workspace invite codes' },
+      { icon: 'security', color: 'tertiary', text: 'Role-based access control (Owner vs Member)' },
+    ],
+    nextBtnLabel: 'Finish Tour & Get Started',
+    position: 'bottom',
   },
 ];
 
@@ -60,14 +80,13 @@ interface SpotlightTutorialProps {
 const scrollToTarget = (element: Element, position?: SpotlightStep['position']) => {
   const style = window.getComputedStyle(element);
   if (style.position === 'fixed') {
-    // Fixed elements (like top header or sidebar rail) never need window scrolling
     return;
   }
 
   const rect = element.getBoundingClientRect();
   const headerHeight = 72; // 64px header + safety buffer
-  const cardEstimatedHeight = 230;
-  const padding = 20;
+  const cardEstimatedHeight = 280;
+  const padding = 24;
 
   let needScroll = false;
   let targetScrollY = window.scrollY;
@@ -76,23 +95,18 @@ const scrollToTarget = (element: Element, position?: SpotlightStep['position']) 
   const currentBottom = rect.bottom;
 
   if (position === 'top') {
-    // We want the tutorial card placed above the element without overlapping.
-    // Ideal top position for element is headerHeight + cardEstimatedHeight + padding (~322px).
     const idealTop = headerHeight + cardEstimatedHeight + padding;
-    if (Math.abs(currentTop - idealTop) > 25) {
+    if (Math.abs(currentTop - idealTop) > 30) {
       needScroll = true;
       targetScrollY = window.scrollY + (currentTop - idealTop);
     }
   } else if (position === 'bottom') {
-    // We want the tutorial card placed below the element.
-    // Ideal top position for element is just below the fixed header.
     const idealTop = headerHeight + padding;
     if (currentTop < idealTop || currentBottom + cardEstimatedHeight + padding > window.innerHeight) {
       needScroll = true;
       targetScrollY = window.scrollY + (currentTop - idealTop);
     }
   } else {
-    // 'right' or 'left': center the element vertically in the available viewport
     if (currentTop < headerHeight || currentBottom > window.innerHeight) {
       needScroll = true;
       const availableHeight = window.innerHeight - headerHeight;
@@ -112,8 +126,7 @@ const scrollToTarget = (element: Element, position?: SpotlightStep['position']) 
 };
 
 /**
- * Calculates collision-free positioning for the floating tutorial card, ensuring
- * it never overlays the spotlighted target element while staying within viewport bounds.
+ * Calculates collision-free positioning for the floating tutorial card.
  */
 function calculateCardPosition(
   targetRect: DOMRect | null,
@@ -128,19 +141,16 @@ function calculateCardPosition(
       left: '50%',
       transform: 'translate(-50%, -50%)',
       width: `${Math.min(cardWidth, window.innerWidth - 32)}px`,
-      zIndex: 100,
+      zIndex: 50,
     };
   }
 
   const padding = 16;
-  const headerBuffer = 72; // Clearance for fixed top header
+  const headerBuffer = 72;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-
-  // Responsive card width capping to viewport
   const actualCardWidth = Math.min(cardWidth, vw - padding * 2);
 
-  // Spotlight boundary with safety buffer around target
   const spotlightBounds = {
     top: targetRect.top - 12,
     bottom: targetRect.bottom + 12,
@@ -148,7 +158,6 @@ function calculateCardPosition(
     right: targetRect.right + 12,
   };
 
-  // Helper to check if card rectangle intersects spotlight boundary
   const intersectsSpotlight = (top: number, left: number) => {
     const cardRect = {
       top,
@@ -164,14 +173,13 @@ function calculateCardPosition(
     );
   };
 
-  // Test candidate position for each side
-  const testSide = (side: 'bottom' | 'top' | 'left' | 'right'): { top: number; left: number; fits: boolean; overlapArea: number } => {
+  const testSide = (side: 'bottom' | 'top' | 'left' | 'right') => {
     let top = 0;
     let left = 0;
 
     if (side === 'bottom') {
       top = targetRect.bottom + padding;
-      left = targetRect.left + (targetRect.width / 2) - (actualCardWidth / 2);
+      left = targetRect.left + targetRect.width / 2 - actualCardWidth / 2;
       left = Math.max(padding, Math.min(left, vw - actualCardWidth - padding));
       const inViewport = top + cardHeight <= vh - padding && top >= headerBuffer;
       const intersects = intersectsSpotlight(top, left);
@@ -180,23 +188,16 @@ function calculateCardPosition(
 
     if (side === 'top') {
       top = targetRect.top - cardHeight - padding;
-      left = targetRect.left + (targetRect.width / 2) - (actualCardWidth / 2);
+      left = targetRect.left + targetRect.width / 2 - actualCardWidth / 2;
       left = Math.max(padding, Math.min(left, vw - actualCardWidth - padding));
-      const minTop = targetRect.top > headerBuffer ? headerBuffer : padding;
-      const inViewport = top >= minTop;
+      const inViewport = top >= headerBuffer;
       const intersects = intersectsSpotlight(top, left);
       return { top, left, fits: inViewport && !intersects, overlapArea: intersects ? 1 : 0 };
     }
 
     if (side === 'right') {
       left = targetRect.right + padding;
-      // If target is tall (e.g. sidebar rail), align near top of target so icons remain visible beside card
-      if (targetRect.height > cardHeight * 1.5) {
-        top = Math.max(headerBuffer, targetRect.top + 24);
-      } else {
-        top = targetRect.top + (targetRect.height / 2) - (cardHeight / 2);
-      }
-      top = Math.max(headerBuffer, Math.min(top, vh - cardHeight - padding));
+      top = Math.max(headerBuffer, Math.min(targetRect.top + 20, vh - cardHeight - padding));
       const inViewport = left + actualCardWidth <= vw - padding;
       const intersects = intersectsSpotlight(top, left);
       return { top, left, fits: inViewport && !intersects, overlapArea: intersects ? 1 : 0 };
@@ -204,12 +205,7 @@ function calculateCardPosition(
 
     if (side === 'left') {
       left = targetRect.left - actualCardWidth - padding;
-      if (targetRect.height > cardHeight * 1.5) {
-        top = Math.max(headerBuffer, targetRect.top + 24);
-      } else {
-        top = targetRect.top + (targetRect.height / 2) - (cardHeight / 2);
-      }
-      top = Math.max(headerBuffer, Math.min(top, vh - cardHeight - padding));
+      top = Math.max(headerBuffer, Math.min(targetRect.top + 20, vh - cardHeight - padding));
       const inViewport = left >= padding;
       const intersects = intersectsSpotlight(top, left);
       return { top, left, fits: inViewport && !intersects, overlapArea: intersects ? 1 : 0 };
@@ -218,16 +214,12 @@ function calculateCardPosition(
     return { top: 0, left: 0, fits: false, overlapArea: 999 };
   };
 
-  // Priority order starting with preferredPosition
   const priorityOrder: ('bottom' | 'top' | 'left' | 'right')[] = [preferredPosition];
   const allSides: ('bottom' | 'top' | 'left' | 'right')[] = ['bottom', 'top', 'right', 'left'];
   for (const s of allSides) {
-    if (!priorityOrder.includes(s)) {
-      priorityOrder.push(s);
-    }
+    if (!priorityOrder.includes(s)) priorityOrder.push(s);
   }
 
-  // Find first side that fits in viewport with ZERO overlap
   for (const side of priorityOrder) {
     const candidate = testSide(side);
     if (candidate.fits) {
@@ -236,49 +228,34 @@ function calculateCardPosition(
         top: `${Math.round(candidate.top)}px`,
         left: `${Math.round(candidate.left)}px`,
         width: `${actualCardWidth}px`,
-        zIndex: 100,
+        zIndex: 50,
       };
     }
   }
 
-  // Fallback: pick candidate with ZERO overlap even if near edge
   for (const side of priorityOrder) {
     const candidate = testSide(side);
     if (candidate.overlapArea === 0) {
-      const safeTop = Math.max(padding, Math.min(candidate.top, vh - cardHeight - padding));
+      const safeTop = Math.max(headerBuffer, Math.min(candidate.top, vh - cardHeight - padding));
       const safeLeft = Math.max(padding, Math.min(candidate.left, vw - actualCardWidth - padding));
       return {
         position: 'fixed',
         top: `${Math.round(safeTop)}px`,
         left: `${Math.round(safeLeft)}px`,
         width: `${actualCardWidth}px`,
-        zIndex: 100,
+        zIndex: 50,
       };
     }
   }
 
-  // Last-resort fallback: place where available space is largest
-  const spaceBelow = vh - targetRect.bottom;
-  const spaceAbove = targetRect.top - headerBuffer;
-  const spaceRight = vw - targetRect.right;
-  const spaceLeft = targetRect.left;
-
-  let bestSide: 'bottom' | 'top' | 'right' | 'left' = 'bottom';
-  const maxSpace = Math.max(spaceBelow, spaceAbove, spaceRight, spaceLeft);
-  if (maxSpace === spaceAbove && spaceAbove > 140) bestSide = 'top';
-  else if (maxSpace === spaceRight && spaceRight > 180) bestSide = 'right';
-  else if (maxSpace === spaceLeft && spaceLeft > 180) bestSide = 'left';
-
-  const bestCandidate = testSide(bestSide);
-  const clampedTop = Math.max(padding, Math.min(bestCandidate.top, vh - cardHeight - padding));
-  const clampedLeft = Math.max(padding, Math.min(bestCandidate.left, vw - actualCardWidth - padding));
-
+  // Fallback: centered
   return {
     position: 'fixed',
-    top: `${Math.round(clampedTop)}px`,
-    left: `${Math.round(clampedLeft)}px`,
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
     width: `${actualCardWidth}px`,
-    zIndex: 100,
+    zIndex: 50,
   };
 }
 
@@ -286,14 +263,14 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
   isOpen,
   onClose,
   onComplete,
-  steps = DEFAULT_STEPS,
+  steps = WORKSPACE_TUTORIAL_STEPS,
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
   const [cardSize, setCardSize] = useState<{ width: number; height: number }>({
-    width: 420,
-    height: 220,
+    width: 480,
+    height: 320,
   });
 
   const cardRef = useRef<HTMLDivElement>(null);
@@ -328,49 +305,40 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
       const el = document.querySelector(currentStep.targetSelector);
       if (el) {
         const rect = el.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-          setTargetRect(prev => {
-            if (
-              prev &&
-              Math.abs(prev.top - rect.top) < 0.5 &&
-              Math.abs(prev.left - rect.left) < 0.5 &&
-              Math.abs(prev.width - rect.width) < 0.5 &&
-              Math.abs(prev.height - rect.height) < 0.5
-            ) {
-              return prev;
-            }
-            return rect;
-          });
-        } else {
-          setTargetRect(null);
-        }
+        setTargetRect(rect);
       } else {
         setTargetRect(null);
       }
     };
 
-    // Immediate initial sync
+    updateRect();
+
+    // Smoothly scroll into view
     const el = currentStep ? document.querySelector(currentStep.targetSelector) : null;
     if (el) {
-      const initialRect = el.getBoundingClientRect();
-      if (initialRect.width > 0 && initialRect.height > 0) {
-        setTargetRect(initialRect);
-      }
-      scrollToTarget(el, currentStep.position);
+      scrollToTarget(el, currentStep?.position);
     }
 
-    // Keep syncing continuously during smooth scroll animation
-    const startTime = performance.now();
+    // Animation frame tracking during scroll
+    let lastY = window.scrollY;
+    let stableCount = 0;
+
     const trackScroll = () => {
       if (!isMounted) return;
-      updateRect();
-      if (performance.now() - startTime < 750) {
+      const curY = window.scrollY;
+      if (curY !== lastY) {
+        lastY = curY;
+        stableCount = 0;
+        updateRect();
+      } else {
+        stableCount++;
+      }
+      if (stableCount < 40) {
         animFrameId = requestAnimationFrame(trackScroll);
       }
     };
     animFrameId = requestAnimationFrame(trackScroll);
 
-    // Event listeners for window resize and scroll
     const handleScrollOrResize = () => {
       updateRect();
       setIsScrolling(true);
@@ -396,14 +364,14 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
     };
   }, [isOpen, currentStepIndex, currentStep]);
 
-  // Keyboard shortcuts
+  // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         handleSkip();
-      } else if (e.key === 'ArrowRight') {
+      } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
         handleNext();
       } else if (e.key === 'ArrowLeft') {
         handleBack();
@@ -414,7 +382,7 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, currentStepIndex]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !currentStep) return null;
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -435,11 +403,18 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none select-none">
+    <div className="fixed inset-0 z-40 pointer-events-none select-none">
+      {/* Stitch Translucent Backdrop with click-to-dismiss */}
+      <div
+        onClick={handleSkip}
+        className="fixed inset-0 bg-surface-container-lowest/80 backdrop-blur-sm pointer-events-auto transition-opacity duration-300"
+        style={{ zIndex: 40 }}
+      />
+
       {/* Target Area Spotlight Illumination Ring & Crystal Clear Cutout */}
-      {targetRect ? (
+      {targetRect && (
         <>
-          {/* Deep dark backdrop surrounding the spotlight with pristine clear window */}
+          {/* Deep dark perimeter cutout with electric border and brightened interior */}
           <div
             style={{
               position: 'fixed',
@@ -447,17 +422,19 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
               left: targetRect.left - 8,
               width: targetRect.width + 16,
               height: targetRect.height + 16,
-              zIndex: 92,
+              zIndex: 42,
               pointerEvents: 'none',
-              borderRadius: '20px',
-              // Giant box shadow creates the darkened perimeter while leaving the target 100% visible and un-obscured
+              borderRadius: '24px',
               boxShadow: `
-                0 0 0 9999px rgba(6, 14, 32, 0.85),
-                0 0 25px 4px rgba(128, 131, 255, 0.6),
-                0 0 60px 10px rgba(78, 222, 163, 0.25)
+                0 0 0 9999px rgba(6, 14, 32, 0.82),
+                0 0 25px 4px rgba(128, 131, 255, 0.65),
+                0 0 60px 10px rgba(78, 222, 163, 0.25),
+                inset 0 0 15px rgba(192, 193, 255, 0.2)
               `,
               border: '2px solid rgba(192, 193, 255, 0.9)',
-              background: 'transparent',
+              backdropFilter: 'brightness(1.4) contrast(1.12) saturate(1.2)',
+              WebkitBackdropFilter: 'brightness(1.4) contrast(1.12) saturate(1.2)',
+              background: 'radial-gradient(ellipse at center, rgba(192, 193, 255, 0.12) 0%, transparent 80%)',
               transition: isScrolling ? 'none' : 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           />
@@ -470,23 +447,18 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
               left: targetRect.left - 12,
               width: targetRect.width + 24,
               height: targetRect.height + 24,
-              zIndex: 91,
+              zIndex: 41,
               pointerEvents: 'none',
-              borderRadius: '24px',
-              border: '1.5px dashed rgba(192, 193, 255, 0.5)',
+              borderRadius: '28px',
+              border: '1.5px dashed rgba(192, 193, 255, 0.6)',
               transition: isScrolling ? 'none' : 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
             className="animate-pulse pointer-events-none"
           />
         </>
-      ) : (
-        <div
-          className="fixed inset-0 bg-surface-container-lowest/88 backdrop-blur-sm transition-opacity pointer-events-none"
-          style={{ zIndex: 90 }}
-        />
       )}
 
-      {/* Floating Tutorial Step Card — Positioned dynamically without overlaying spotlighted target */}
+      {/* Floating Tutorial Step Card — Exact Stitch Specification */}
       <div
         ref={cardRef}
         style={{
@@ -498,71 +470,133 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
           ),
           transition: isScrolling ? 'none' : 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className="rounded-3xl bg-surface-container-high/95 backdrop-blur-2xl border border-outline-variant/40 p-5 sm:p-6 shadow-2xl animate-entrance flex flex-col gap-4 text-on-surface pointer-events-auto"
+        className="pointer-events-auto relative w-full max-w-lg rounded-3xl bg-surface-container-high/95 backdrop-blur-xl border border-primary/40 p-6 sm:p-7 shadow-2xl shadow-indigo-500/20 animate-entrance text-on-surface"
       >
-        {/* Header row: Badge + Skip Tutorial / Close button */}
-        <div className="flex items-center justify-between gap-2">
-          <span className="px-3 py-1 rounded-full bg-primary-container/20 text-primary font-semibold text-xs tracking-wide">
-            {currentStep.badge}
-          </span>
-          <button
-            onClick={handleSkip}
-            className="text-outline hover:text-on-surface p-1 rounded-full hover:bg-surface-container-highest transition-colors flex items-center gap-1 text-xs cursor-pointer"
-            title="Skip tutorial (Esc)"
-          >
-            <span className="font-medium">Skip</span>
-            <span className="material-symbols-outlined text-[16px]">close</span>
-          </button>
+        {/* Floating Top Badge with Live Dot */}
+        <div className="absolute -top-3 left-8 px-3 py-1 rounded-full bg-primary-container text-on-primary-container text-[11px] font-semibold tracking-wide flex items-center gap-1.5 shadow-md">
+          <span className="w-2 h-2 rounded-full bg-surface-tint pulse-ring-dot" />
+          <span>{currentStep.badge}</span>
         </div>
 
-        {/* Content */}
-        <div className="space-y-1.5">
-          <h3 className="font-display font-bold text-lg text-on-surface tracking-tight">
-            {currentStep.title}
-          </h3>
-          <p className="font-body text-xs leading-relaxed text-on-surface-variant">
-            {currentStep.description}
-          </p>
-        </div>
+        {/* Top-Right Dismiss Button */}
+        <button
+          onClick={handleSkip}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container-highest transition-colors cursor-pointer"
+          title="Dismiss tour (Esc)"
+        >
+          <span className="material-symbols-outlined text-[18px]">close</span>
+        </button>
 
-        {/* Step indicator dots & Navigation buttons */}
-        <div className="flex items-center justify-between pt-2 border-t border-outline-variant/20 mt-1">
-          {/* Progress dots */}
-          <div className="flex items-center gap-1.5">
-            {steps.map((_, index) => (
-              <span
-                key={index}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  index === currentStepIndex
-                    ? 'w-6 bg-primary'
-                    : 'w-1.5 bg-outline-variant/60'
-                }`}
-              />
-            ))}
+        {/* Card Header: Icon + Title */}
+        <div className="pt-1">
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-9 h-9 rounded-xl bg-primary-container/20 text-primary flex items-center justify-center shadow-inner shrink-0">
+              <span className="material-symbols-outlined text-[22px]">{currentStep.icon}</span>
+            </div>
+            <h3 className="font-display font-bold text-lg text-on-surface tracking-tight">
+              {currentStep.title}
+            </h3>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2">
-            {currentStepIndex > 0 && (
+          {/* Description */}
+          <p className="text-xs sm:text-sm text-on-surface-variant mb-4 leading-relaxed">
+            {currentStep.description}
+          </p>
+
+          {/* Stitch Feature Highlights Checklist */}
+          {currentStep.features && currentStep.features.length > 0 && (
+            <div className="grid grid-cols-1 gap-2 mb-4 p-3 rounded-2xl bg-surface-container-lowest/60 border border-outline-variant/20">
+              {currentStep.features.map((feature, idx) => {
+                const colorClass =
+                  feature.color === 'secondary'
+                    ? 'bg-secondary-container/20 text-secondary'
+                    : feature.color === 'tertiary'
+                    ? 'bg-tertiary-container/20 text-tertiary'
+                    : 'bg-primary-container/20 text-primary';
+                return (
+                  <div key={idx} className="flex items-center gap-2.5 text-xs text-on-surface">
+                    <span
+                      className={`w-6 h-6 rounded-lg ${colorClass} flex items-center justify-center flex-shrink-0 shadow-inner`}
+                    >
+                      <span className="material-symbols-outlined text-[14px]">{feature.icon}</span>
+                    </span>
+                    <span className="text-on-surface font-medium">{feature.text}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Step Indicator & Action Controls */}
+          <div className="flex items-center justify-between pt-3 border-t border-outline-variant/20">
+            {/* Step Indicators */}
+            <div className="flex items-center gap-1.5">
+              {steps.map((_, idx) => (
+                <span
+                  key={idx}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    idx === currentStepIndex
+                      ? 'w-6 bg-primary-container shadow-sm'
+                      : 'w-2 bg-surface-container-highest'
+                  }`}
+                />
+              ))}
+              <span className="text-[11px] text-outline ml-2 font-medium">
+                {currentStepIndex + 1} of {steps.length}
+              </span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={handleBack}
-                className="px-3 py-1.5 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container text-xs font-medium transition-colors cursor-pointer"
+                onClick={handleSkip}
+                className="px-3 py-2 rounded-xl text-outline hover:text-on-surface text-xs font-medium transition-colors cursor-pointer"
               >
-                Back
+                Skip Tour
               </button>
-            )}
 
-            <button
-              type="button"
-              onClick={handleNext}
-              className="px-4 py-1.5 rounded-xl bg-primary-container text-on-primary-container hover:bg-primary font-semibold text-xs shadow-md hover:shadow-indigo-500/25 transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
-            >
-              <span>{currentStepIndex === steps.length - 1 ? 'Got it!' : 'Next'}</span>
-              <span className="material-symbols-outlined text-[16px]">
-                {currentStepIndex === steps.length - 1 ? 'check' : 'arrow_forward'}
-              </span>
-            </button>
+              {currentStepIndex > 0 && (
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="px-3 py-2 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[14px]">arrow_back</span>
+                  <span>Back</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleNext}
+                className="px-4 py-2 rounded-xl bg-primary-container hover:bg-primary text-on-primary-container text-xs font-semibold flex items-center gap-1.5 shadow-md hover:shadow-indigo-500/25 transition-all active:scale-95 cursor-pointer"
+              >
+                <span>
+                  {currentStep.nextBtnLabel ||
+                    (currentStepIndex === steps.length - 1 ? 'Finish Tour & Get Started' : 'Next Step')}
+                </span>
+                <span className="material-symbols-outlined text-[16px]">
+                  {currentStepIndex === steps.length - 1 ? 'check' : 'arrow_forward'}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Keyboard Shortcuts Hint Bar */}
+          <div className="mt-3 pt-2 flex items-center justify-between text-[11px] text-outline border-t border-outline-variant/10">
+            <span className="flex items-center gap-1">
+              <span className="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-mono text-[10px]">
+                →
+              </span>{' '}
+              Next tip
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-mono text-[10px]">
+                Esc
+              </span>{' '}
+              Dismiss anytime
+            </span>
           </div>
         </div>
       </div>

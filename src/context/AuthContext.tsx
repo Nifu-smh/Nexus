@@ -121,11 +121,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (supabaseState.isConfigured && client) {
       client.auth.getSession().then(({ data: { session: supaSession } }) => {
         if (supaSession?.user) {
+          const meta = supaSession.user.user_metadata || {};
           const u: User = {
             id: supaSession.user.id,
             email: supaSession.user.email || '',
-            name: supaSession.user.user_metadata?.name || supaSession.user.email?.split('@')[0] || 'User',
-            role: (supaSession.user.user_metadata?.role as Role) || 'MEMBER',
+            name: meta.full_name || meta.name || supaSession.user.email?.split('@')[0] || 'User',
+            role: (meta.role as Role) || 'MEMBER',
+            avatarUrl: meta.avatar_url || meta.picture,
             createdAt: supaSession.user.created_at,
           };
           setSession({
@@ -133,17 +135,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             token: supaSession.access_token,
             expiresAt: new Date((supaSession.expires_at || 0) * 1000).toISOString(),
           });
+
+          if (typeof window !== 'undefined' && (window.location.hash.includes('access_token') || window.location.search.includes('code='))) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
         }
         setIsLoading(false);
       });
 
       const { data: { subscription } } = client.auth.onAuthStateChange((_event, supaSession) => {
         if (supaSession?.user) {
+          const meta = supaSession.user.user_metadata || {};
           const u: User = {
             id: supaSession.user.id,
             email: supaSession.user.email || '',
-            name: supaSession.user.user_metadata?.name || supaSession.user.email?.split('@')[0] || 'User',
-            role: (supaSession.user.user_metadata?.role as Role) || 'MEMBER',
+            name: meta.full_name || meta.name || supaSession.user.email?.split('@')[0] || 'User',
+            role: (meta.role as Role) || 'MEMBER',
+            avatarUrl: meta.avatar_url || meta.picture,
             createdAt: supaSession.user.created_at,
           };
           setSession({
@@ -151,6 +159,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             token: supaSession.access_token,
             expiresAt: new Date((supaSession.expires_at || 0) * 1000).toISOString(),
           });
+
+          if (typeof window !== 'undefined' && (window.location.hash.includes('access_token') || window.location.search.includes('code='))) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
         } else {
           setSession(null);
         }
