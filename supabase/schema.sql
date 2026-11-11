@@ -461,7 +461,7 @@ EXCEPTION WHEN others THEN null;
 END $$;
 
 DO $$ BEGIN
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.task_comments;
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.comments;
 EXCEPTION WHEN others THEN null;
 END $$;
 
@@ -470,7 +470,7 @@ ALTER TABLE public.workspaces REPLICA IDENTITY FULL;
 ALTER TABLE public.workspace_members REPLICA IDENTITY FULL;
 ALTER TABLE public.projects REPLICA IDENTITY FULL;
 ALTER TABLE public.tasks REPLICA IDENTITY FULL;
-ALTER TABLE public.task_comments REPLICA IDENTITY FULL;
+ALTER TABLE public.comments REPLICA IDENTITY FULL;
 
 
 
