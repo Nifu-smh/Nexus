@@ -14,7 +14,6 @@ export interface SpotlightStep {
   description: string;
   features: TutorialFeature[];
   nextBtnLabel?: string;
-  position?: 'bottom' | 'top' | 'left' | 'right';
 }
 
 /**
@@ -34,7 +33,6 @@ export const WORKSPACE_TUTORIAL_STEPS: SpotlightStep[] = [
       { icon: 'groups', color: 'tertiary', text: 'Collaborative multi-agent developer sandboxes' },
     ],
     nextBtnLabel: 'Next: Sprint Telemetry',
-    position: 'top',
   },
   {
     targetSelector: '[data-tour="metrics-row"]',
@@ -48,7 +46,6 @@ export const WORKSPACE_TUTORIAL_STEPS: SpotlightStep[] = [
       { icon: 'alt_route', color: 'tertiary', text: 'Real-time GitHub & Supabase cloud synchronization' },
     ],
     nextBtnLabel: 'Next: Workspace Provisioning',
-    position: 'bottom',
   },
   {
     targetSelector: '[data-tour="action-hub"]',
@@ -62,7 +59,6 @@ export const WORKSPACE_TUTORIAL_STEPS: SpotlightStep[] = [
       { icon: 'security', color: 'tertiary', text: 'Role-based access control (Owner vs Member)' },
     ],
     nextBtnLabel: 'Finish Tour & Get Started',
-    position: 'bottom',
   },
 ];
 
@@ -74,190 +70,28 @@ interface SpotlightTutorialProps {
 }
 
 /**
- * Smoothly scrolls the window so both the target element and its tutorial card are visible,
- * without obscuring either under fixed headers or beyond viewport bounds.
+ * Smoothly scrolls the window so the target element is framed comfortably in the viewport.
  */
-const scrollToTarget = (element: Element, position?: SpotlightStep['position']) => {
+const scrollToTarget = (element: Element) => {
   const style = window.getComputedStyle(element);
-  if (style.position === 'fixed') {
-    return;
-  }
+  if (style.position === 'fixed') return;
 
   const rect = element.getBoundingClientRect();
-  const headerHeight = 72; // 64px header + safety buffer
-  const cardEstimatedHeight = 280;
-  const padding = 24;
-
-  let needScroll = false;
-  let targetScrollY = window.scrollY;
-
+  const headerHeight = 72; // Clearance for top fixed header
   const currentTop = rect.top;
-  const currentBottom = rect.bottom;
 
-  if (position === 'top') {
-    const idealTop = headerHeight + cardEstimatedHeight + padding;
-    if (Math.abs(currentTop - idealTop) > 30) {
-      needScroll = true;
-      targetScrollY = window.scrollY + (currentTop - idealTop);
-    }
-  } else if (position === 'bottom') {
-    const idealTop = headerHeight + padding;
-    if (currentTop < idealTop || currentBottom + cardEstimatedHeight + padding > window.innerHeight) {
-      needScroll = true;
-      targetScrollY = window.scrollY + (currentTop - idealTop);
-    }
-  } else {
-    if (currentTop < headerHeight || currentBottom > window.innerHeight) {
-      needScroll = true;
-      const availableHeight = window.innerHeight - headerHeight;
-      const idealTop = headerHeight + Math.max(padding, (availableHeight - rect.height) / 2);
-      targetScrollY = window.scrollY + (currentTop - idealTop);
-    }
-  }
+  // Center the target comfortably in view below header
+  const idealTop = headerHeight + Math.max(20, (window.innerHeight - headerHeight - rect.height) / 2);
+  const targetScrollY = window.scrollY + (currentTop - idealTop);
 
-  if (needScroll) {
-    const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    const clampedScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
-    window.scrollTo({
-      top: clampedScrollY,
-      behavior: 'smooth',
-    });
-  }
+  const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  const clampedScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
+
+  window.scrollTo({
+    top: clampedScrollY,
+    behavior: 'smooth',
+  });
 };
-
-/**
- * Calculates collision-free positioning for the floating tutorial card.
- */
-function calculateCardPosition(
-  targetRect: DOMRect | null,
-  cardWidth: number,
-  cardHeight: number,
-  preferredPosition: 'bottom' | 'top' | 'left' | 'right' = 'bottom'
-): React.CSSProperties {
-  if (!targetRect) {
-    return {
-      position: 'fixed',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      width: `${Math.min(cardWidth, window.innerWidth - 32)}px`,
-      zIndex: 50,
-    };
-  }
-
-  const padding = 16;
-  const headerBuffer = 72;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const actualCardWidth = Math.min(cardWidth, vw - padding * 2);
-
-  const spotlightBounds = {
-    top: targetRect.top - 12,
-    bottom: targetRect.bottom + 12,
-    left: targetRect.left - 12,
-    right: targetRect.right + 12,
-  };
-
-  const intersectsSpotlight = (top: number, left: number) => {
-    const cardRect = {
-      top,
-      bottom: top + cardHeight,
-      left,
-      right: left + actualCardWidth,
-    };
-    return !(
-      cardRect.right <= spotlightBounds.left ||
-      cardRect.left >= spotlightBounds.right ||
-      cardRect.bottom <= spotlightBounds.top ||
-      cardRect.top >= spotlightBounds.bottom
-    );
-  };
-
-  const testSide = (side: 'bottom' | 'top' | 'left' | 'right') => {
-    let top = 0;
-    let left = 0;
-
-    if (side === 'bottom') {
-      top = targetRect.bottom + padding;
-      left = targetRect.left + targetRect.width / 2 - actualCardWidth / 2;
-      left = Math.max(padding, Math.min(left, vw - actualCardWidth - padding));
-      const inViewport = top + cardHeight <= vh - padding && top >= headerBuffer;
-      const intersects = intersectsSpotlight(top, left);
-      return { top, left, fits: inViewport && !intersects, overlapArea: intersects ? 1 : 0 };
-    }
-
-    if (side === 'top') {
-      top = targetRect.top - cardHeight - padding;
-      left = targetRect.left + targetRect.width / 2 - actualCardWidth / 2;
-      left = Math.max(padding, Math.min(left, vw - actualCardWidth - padding));
-      const inViewport = top >= headerBuffer;
-      const intersects = intersectsSpotlight(top, left);
-      return { top, left, fits: inViewport && !intersects, overlapArea: intersects ? 1 : 0 };
-    }
-
-    if (side === 'right') {
-      left = targetRect.right + padding;
-      top = Math.max(headerBuffer, Math.min(targetRect.top + 20, vh - cardHeight - padding));
-      const inViewport = left + actualCardWidth <= vw - padding;
-      const intersects = intersectsSpotlight(top, left);
-      return { top, left, fits: inViewport && !intersects, overlapArea: intersects ? 1 : 0 };
-    }
-
-    if (side === 'left') {
-      left = targetRect.left - actualCardWidth - padding;
-      top = Math.max(headerBuffer, Math.min(targetRect.top + 20, vh - cardHeight - padding));
-      const inViewport = left >= padding;
-      const intersects = intersectsSpotlight(top, left);
-      return { top, left, fits: inViewport && !intersects, overlapArea: intersects ? 1 : 0 };
-    }
-
-    return { top: 0, left: 0, fits: false, overlapArea: 999 };
-  };
-
-  const priorityOrder: ('bottom' | 'top' | 'left' | 'right')[] = [preferredPosition];
-  const allSides: ('bottom' | 'top' | 'left' | 'right')[] = ['bottom', 'top', 'right', 'left'];
-  for (const s of allSides) {
-    if (!priorityOrder.includes(s)) priorityOrder.push(s);
-  }
-
-  for (const side of priorityOrder) {
-    const candidate = testSide(side);
-    if (candidate.fits) {
-      return {
-        position: 'fixed',
-        top: `${Math.round(candidate.top)}px`,
-        left: `${Math.round(candidate.left)}px`,
-        width: `${actualCardWidth}px`,
-        zIndex: 50,
-      };
-    }
-  }
-
-  for (const side of priorityOrder) {
-    const candidate = testSide(side);
-    if (candidate.overlapArea === 0) {
-      const safeTop = Math.max(headerBuffer, Math.min(candidate.top, vh - cardHeight - padding));
-      const safeLeft = Math.max(padding, Math.min(candidate.left, vw - actualCardWidth - padding));
-      return {
-        position: 'fixed',
-        top: `${Math.round(safeTop)}px`,
-        left: `${Math.round(safeLeft)}px`,
-        width: `${actualCardWidth}px`,
-        zIndex: 50,
-      };
-    }
-  }
-
-  // Fallback: centered
-  return {
-    position: 'fixed',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: `${actualCardWidth}px`,
-    zIndex: 50,
-  };
-}
 
 export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
   isOpen,
@@ -268,30 +102,9 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
-  const [cardSize, setCardSize] = useState<{ width: number; height: number }>({
-    width: 480,
-    height: 320,
-  });
-
-  const cardRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<number | null>(null);
 
   const currentStep = steps[currentStepIndex];
-
-  // Measure card dimensions dynamically with ResizeObserver
-  useEffect(() => {
-    if (!cardRef.current) return;
-    const observer = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        if (width > 0 && height > 0) {
-          setCardSize({ width: Math.round(width), height: Math.round(height) });
-        }
-      }
-    });
-    observer.observe(cardRef.current);
-    return () => observer.disconnect();
-  }, [currentStepIndex, isOpen]);
 
   // Target positioning and smooth scroll sync
   useEffect(() => {
@@ -313,10 +126,10 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
 
     updateRect();
 
-    // Smoothly scroll into view
+    // Smoothly scroll target into view
     const el = currentStep ? document.querySelector(currentStep.targetSelector) : null;
     if (el) {
-      scrollToTarget(el, currentStep?.position);
+      scrollToTarget(el);
     }
 
     // Animation frame tracking during scroll
@@ -403,12 +216,11 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-40 pointer-events-none select-none">
+    <div className="fixed inset-0 z-50 pointer-events-none select-none flex items-center justify-center p-4 sm:p-6">
       {/* Stitch Translucent Backdrop with click-to-dismiss */}
       <div
         onClick={handleSkip}
-        className="fixed inset-0 bg-surface-container-lowest/80 backdrop-blur-sm pointer-events-auto transition-opacity duration-300"
-        style={{ zIndex: 40 }}
+        className="fixed inset-0 bg-surface-container-lowest/80 backdrop-blur-sm pointer-events-auto transition-opacity duration-300 z-40"
       />
 
       {/* Target Area Spotlight Illumination Ring & Crystal Clear Cutout */}
@@ -458,20 +270,8 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
         </>
       )}
 
-      {/* Floating Tutorial Step Card — Exact Stitch Specification */}
-      <div
-        ref={cardRef}
-        style={{
-          ...calculateCardPosition(
-            targetRect,
-            cardSize.width,
-            cardSize.height,
-            currentStep?.position
-          ),
-          transition: isScrolling ? 'none' : 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-        }}
-        className="pointer-events-auto relative w-full max-w-lg rounded-3xl bg-surface-container-high/95 backdrop-blur-xl border border-primary/40 p-6 sm:p-7 shadow-2xl shadow-indigo-500/20 animate-entrance text-on-surface"
-      >
+      {/* Floating Tutorial Step Card — Exact Stitch Specification (w-full max-w-lg, centered, never squeezed) */}
+      <div className="pointer-events-auto relative w-full max-w-lg rounded-3xl bg-surface-container-high/95 backdrop-blur-xl border border-primary/40 p-6 sm:p-8 shadow-2xl shadow-indigo-500/20 animate-entrance text-on-surface z-50 my-auto">
         {/* Floating Top Badge with Live Dot */}
         <div className="absolute -top-3 left-8 px-3 py-1 rounded-full bg-primary-container text-on-primary-container text-[11px] font-semibold tracking-wide flex items-center gap-1.5 shadow-md">
           <span className="w-2 h-2 rounded-full bg-surface-tint pulse-ring-dot" />
