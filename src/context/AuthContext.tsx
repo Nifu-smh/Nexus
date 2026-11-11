@@ -343,30 +343,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithOAuth = async (provider: 'google' | 'github'): Promise<{ success: boolean; error?: string }> => {
     const client = supabaseState.client;
     if (supabaseState.isConfigured && client) {
-      // First check if Supabase provider is enabled to prevent landing on a 400 Bad Request error page
-      try {
-        const { url: supabaseUrl } = getSupabaseCredentials();
-        if (supabaseUrl) {
-          const checkUrl = `${supabaseUrl}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(window.location.origin)}`;
-          const checkResp = await fetch(checkUrl, { method: 'GET' });
-          if (checkResp.status === 400) {
-            const data = await checkResp.json().catch(() => ({}));
-            if (data.msg?.includes('Unsupported provider') || data.error_code === 'validation_failed') {
-              return {
-                success: false,
-                error: `PROVIDER_NOT_ENABLED:${provider}`,
-              };
-            }
-          }
-        }
-      } catch {
-        // Ignore network check failure and attempt standard signInWithOAuth
-      }
-
       const { error } = await client.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: window.location.origin,
+          queryParams: {
+            prompt: 'select_account',
+            access_type: 'offline',
+          },
         },
       });
       if (error) {
@@ -375,7 +359,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     }
 
-    return loginWithDemoOAuth(provider);
+    return {
+      success: false,
+      error: 'Supabase authentication client is not configured. Please check your credentials.',
+    };
   };
 
   const resetPassword = async (email: string): Promise<{ success: boolean; message?: string; error?: string }> => {

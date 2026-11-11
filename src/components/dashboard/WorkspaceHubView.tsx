@@ -430,7 +430,7 @@ export const WorkspaceHubView: React.FC<WorkspaceHubViewProps> = ({
         {/* COLLAPSIBLE SIDEBAR: SHRINK & EXPAND WITH FLUID GLIDING OVERLAY & ACCURATE CENTER ALIGNMENT */}
         <aside
           data-tour="sidebar-nav"
-          className={`fixed left-0 top-16 bottom-0 z-30 bg-surface-container-low/95 backdrop-blur-xl border-r border-outline-variant/30 flex flex-col justify-between py-4 select-none transition-[width,padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hidden md:flex ${
+          className={`fixed left-0 top-16 bottom-0 z-30 bg-surface-container-low/95 backdrop-blur-xl border-r border-outline-variant/30 flex flex-col justify-between py-4 select-none transition-[width,padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hidden md:flex overflow-y-auto overflow-x-hidden ${
             isSidebarExpanded ? 'w-64 px-3' : 'w-[72px] px-0 items-center'
           }`}
         >
@@ -628,7 +628,7 @@ export const WorkspaceHubView: React.FC<WorkspaceHubViewProps> = ({
 
         {/* Main Content Area (Fluid padding transition matching sidebar expand/shrink) */}
         <main
-          className={`flex-1 min-h-screen bg-surface w-full p-4 sm:p-6 lg:p-8 relative transition-[padding-left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`flex-1 min-h-screen bg-surface w-full p-4 sm:p-6 lg:p-8 pb-24 relative transition-[padding-left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
             isSidebarExpanded ? 'md:pl-64' : 'md:pl-[76px]'
           }`}
         >
@@ -1473,10 +1473,12 @@ export const WorkspaceHubView: React.FC<WorkspaceHubViewProps> = ({
         onClose={() => {
           setShowTutorial(false);
           completeOnboarding();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onComplete={() => {
           setShowTutorial(false);
           completeOnboarding();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       />
 

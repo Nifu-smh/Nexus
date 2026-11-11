@@ -67,21 +67,25 @@
     background-color: #0b1326;
     color: #dae2fd;
     font-family: var(--font-sans);
-    height: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
   }
 }
 
 /* Custom scrollbars */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(11, 19, 38, 0.5);
 }
 ::-webkit-scrollbar-thumb {
   background: #2d3449;
   border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #464554;
 }
 
 /* Micro-interaction & Keyframe animations from Stitch */

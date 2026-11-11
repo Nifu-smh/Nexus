@@ -435,7 +435,7 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden pointer-events-auto select-none">
+    <div className="fixed inset-0 z-50 pointer-events-none select-none">
       {/* Target Area Spotlight Illumination Ring & Crystal Clear Cutout */}
       {targetRect ? (
         <>
@@ -481,7 +481,7 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
         </>
       ) : (
         <div
-          className="fixed inset-0 bg-surface-container-lowest/88 backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-surface-container-lowest/88 backdrop-blur-sm transition-opacity pointer-events-none"
           style={{ zIndex: 90 }}
         />
       )}
@@ -498,7 +498,7 @@ export const SpotlightTutorial: React.FC<SpotlightTutorialProps> = ({
           ),
           transition: isScrolling ? 'none' : 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className="rounded-3xl bg-surface-container-high/95 backdrop-blur-2xl border border-outline-variant/40 p-5 sm:p-6 shadow-2xl animate-entrance flex flex-col gap-4 text-on-surface"
+        className="rounded-3xl bg-surface-container-high/95 backdrop-blur-2xl border border-outline-variant/40 p-5 sm:p-6 shadow-2xl animate-entrance flex flex-col gap-4 text-on-surface pointer-events-auto"
       >
         {/* Header row: Badge + Skip Tutorial / Close button */}
         <div className="flex items-center justify-between gap-2">
